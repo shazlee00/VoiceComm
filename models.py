@@ -67,6 +67,13 @@ class VendingMachine:
     def save_order(self):
         if self.order.items:
             self.order.save_order() 
+    def create_order_list(self):
+        order_list=''
+        for item in self.order.items:
+         product=item['product']
+         amount=item['quantity']
+         order_list+=( f"{product.position}"*amount ) 
+        return order_list        
 #process order                 
     def initialize_process_order(self):
         if self.order.items:
@@ -86,7 +93,7 @@ class VendingMachine:
             print("order scanned")
         elif self.order.status==20:
             print("Succeses")
-            print("dispensing items.....")
+            print("dispencing items.....")
             #hardware function here.......
             #self._process_order.update_stock()
             self._process_order.close_timer()
@@ -201,7 +208,8 @@ class Product:
         self.imgUrl=product['image']
         self.price=product['price']
         self.amount=product['amount'] 
-        self.position=product['position'] 
+        self.position=product['position']
+        self.details=product['details'] 
     def get_product_data(self):
         product=db.child('machine-products').child(self.machine_id).child(self.product_id).get().val()
         return product
@@ -265,8 +273,8 @@ class Order:
             order=[]
             for item in self.items:
                 
-                order.append(f"{item['product'].name}: {item['quantity']} x ${item['product'].price} = ${item['subtotal']}")
-            print(f"Total: ${self.total}")
+                order.append(f"{item['product'].name}: {item['quantity']} x {item['product'].price}EGP = {item['subtotal']}EGP")
+            print(f"Total:{self.total}EGP")
             return order    
         else:
             None
@@ -278,7 +286,7 @@ class Order:
             quantity=item['quantity']
             subtotal=item['subtotal']
             items={
-               product.product_id:{'name':product.name,'price':product.price,'quantity':quantity,'subtotal':subtotal }
+               product.product_id:{'name':product.name,'price':product.price,'details':product.details,'quantity':quantity,'subtotal':subtotal }
             }
         machine_order={
             'order':items,
@@ -319,7 +327,7 @@ class ProcessOrder:
 
     def listen_to_order_status(self):
         self.order_status_stream = db.child("machine-orders").child(self.order.machine_id).child(self.order.order_id).child("status").stream(self.order_status_stream_handler)
-        self.timer=threading.Timer(30,self._connection_time_out)
+        self.timer=threading.Timer(100,self._connection_time_out)
         self.timer.start()
                             
     def close_stream(self):
